@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>医院点餐管理后台</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #4A90D9;
+      --primary-dark: #357ABD;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --danger: #FF4D4F;
+      --bg: #F0F2F5;
+      --sidebar-bg: #001529;
+      --sidebar-text: #ffffffa6;
+      --sidebar-active: #1890FF;
+      --card-bg: #FFFFFF;
+      --text: #333;
+      --text-secondary: #666;
+      --border: #E8E8E8;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+    
+    /* Login */
+    #login-page {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .login-box {
+      background: white; border-radius: 12px; padding: 40px; width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .login-box h1 { text-align: center; margin-bottom: 8px; font-size: 22px; }
+    .login-box .subtitle { text-align: center; color: #999; margin-bottom: 32px; font-size: 13px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px;
+      font-size: 14px; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-warning { background: var(--warning); color: white; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-block { width: 100%; padding: 12px; font-size: 15px; }
+    .btn + .btn { margin-left: 8px; }
+    
+    /* Layout */
+    #admin-page { display: none; }
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 220px; background: var(--sidebar-bg); color: var(--sidebar-text);
+      padding-top: 0; position: fixed; top: 0; bottom: 0; overflow-y: auto; z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 20px; text-align: center; color: white; font-size: 16px; font-weight: 600;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .sidebar-logo span { font-size: 22px; display: block; margin-bottom: 4px; }
+    .sidebar-menu { list-style: none; padding: 8px 0; }
+    .sidebar-menu li {
+      padding: 12px 24px; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; gap: 10px; font-size: 14px;
+    }
+    .sidebar-menu li:hover { background: rgba(255,255,255,0.08); color: white; }
+    .sidebar-menu li.active { background: var(--sidebar-active); color: white; }
+    .sidebar-menu li .icon { font-size: 18px; }
+    .main-content { margin-left: 220px; flex: 1; padding: 0; }
+    
+    /* Top Bar */
+    .topbar {
+      background: white; padding: 0 24px; height: 56px; display: flex; align-items: center;
+      justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-title { font-size: 16px; font-weight: 600; }
+    .topbar-user { display: flex; align-items: center; gap: 8px; }
+    .topbar-user .name { font-size: 13px; color: var(--text-secondary); }
+    .btn-logout { background: none; border: 1px solid var(--border); padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+    
+    /* Content Panels */
+    .content-area { padding: 24px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .stat-card .label { font-size: 13px; color: var(--text-secondary); }
+    .stat-card .value { font-size: 28px; font-weight: 700; margin-top: 8px; }
+    .stat-card.blue .value { color: var(--primary); }
+    .stat-card.green .value { color: var(--success); }
+    .stat-card.orange .value { color: var(--warning); }
+    .stat-card.red .value { color: var(--danger); }
+    
+    /* Table */
+    .card { background: white; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .card-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .card-header h3 { font-size: 15px; }
+    .card-body { padding: 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    th { background: #fafafa; font-weight: 600; color: var(--text-secondary); }
+    tr:hover { background: #f9f9f9; }
+    
+    /* Tags */
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+    .tag-blue { background: #E6F7FF; color: #1890FF; }
+    .tag-green { background: #F6FFED; color: #52C41A; }
+    .tag-orange { background: #FFF7E6; color: #FA8C16; }
+    .tag-red { background: #FFF1F0; color: #FF4D4F; }
+    .tag-gray { background: #F5F5F5; color: #999; }
+    
+    /* Toggle */
+    .toggle { position: relative; width: 40px; height: 22px; display: inline-block; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: #ccc; border-radius: 22px; cursor: pointer; transition: 0.3s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; width: 18px; height: 18px; left: 2px; bottom: 2px;
+      background: white; border-radius: 50%; transition: 0.3s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--success); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+    
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: white; border-radius: 8px; padding: 24px; width: 480px; max-width: 90vw;
+      max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    }
+    .modal h3 { margin-bottom: 20px; font-size: 16px; }
+    .modal-footer { margin-top: 24px; text-align: right; }
+    
+    /* Toolbar */
+    .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .toolbar input, .toolbar select {
+      padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+    }
+
+    /* Order Detail */
+    .order-detail-items { margin: 12px 0; }
+    .order-detail-items .item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+
+    /* Bed Visual */
+    .bed-building-tabs {
+      display: flex; gap: 0; background: white; border-radius: 10px 10px 0 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; margin-bottom: 0;
+    }
+    .bed-building-tab {
+      flex: 1; padding: 16px 12px; text-align: center; cursor: pointer;
+      font-size: 14px; font-weight: 500; color: var(--text-secondary);
+      border-bottom: 3px solid transparent; transition: all .2s;
+      background: #fafafa; position: relative;
+    }
+    .bed-building-tab:hover { background: #f0f7ff; color: var(--primary); }
+    .bed-building-tab.active {
+      background: white; color: var(--primary); border-bottom-color: var(--primary); font-weight: 600;
+    }
+    .bed-building-tab .tab-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+    .bed-building-tab .tab-info { font-size: 11px; color: #aaa; margin-top: 2px; }
+    .bed-building-tab.active .tab-info { color: var(--primary); opacity: .7; }
+
+    .bed-floor-bar {
+      display: flex; gap: 0; background: white; padding: 0 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04); flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+    }
+    .bed-floor-btn {
+      padding: 10px 16px; font-size: 13px; cursor: pointer; color: var(--text-secondary);
+      border: none; background: none; border-bottom: 2px solid transparent;
+      transition: all .15s; min-width: 48px; text-align: center;
+    }
+    .bed-floor-btn:hover { color: var(--primary); background: #f0f7ff; }
+    .bed-floor-btn.active { color: var(--primary); font-weight: 600; border-bottom-color: var(--primary); }
+
+    .bed-grid-container {
+      background: white; border-radius: 0 0 10px 10px; padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); min-height: 300px;
+    }
+    .bed-grid-title {
+      font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .bed-grid-title .bed-count { font-size: 12px; color: #aaa; font-weight: 400; }
+    .bed-grid-legend {
+      display: flex; gap: 20px; margin-bottom: 16px; font-size: 12px; color: var(--text-secondary);
+    }
+    .bed-grid-legend span { display: flex; align-items: center; gap: 4px; }
+    .bed-grid-legend .dot {
+      width: 12px; height: 12px; border-radius: 3px; display: inline-block;
+    }
+    .bed-grid-legend .dot-occupied { background: var(--primary); }
+    .bed-grid-legend .dot-empty { background: #e8e8e8; }
+
+    .bed-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+      gap: 8px;
+    }
+    .bed-cell {
+      width: 100%; aspect-ratio: 1; border-radius: 6px; display: flex;
+      align-items: center; justify-content: center; font-size: 13px;
+      font-weight: 500; cursor: pointer; transition: all .15s;
+      border: 1px solid #eee; position: relative;
+    }
+    .bed-cell.empty { background: #f5f5f5; color: #bbb; }
+    .bed-cell.empty:hover { background: #eee; }
+    .bed-cell.occupied { background: #e6f7ff; color: var(--primary); border-color: #91d5ff; }
+    .bed-cell.occupied:hover { background: #bae7ff; transform: scale(1.05); box-shadow: 0 2px 8px rgba(24,144,255,.2); }
+    .bed-cell .cell-patient {
+      position: absolute; bottom: 2px; font-size: 9px; color: var(--primary-dark);
+      max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* Bed Order Modal */
+    .modal-wide { width: 640px; max-width: 95vw; }
+    .bed-order-header {
+      display: flex; align-items: center; gap: 16px; padding: 16px; margin: -4px -4px 16px;
+      background: linear-gradient(135deg, #e6f7ff, #f0f5ff); border-radius: 8px;
+    }
+    .bed-order-header .bed-icon { font-size: 36px; }
+    .bed-order-header .bed-info h4 { font-size: 16px; margin-bottom: 4px; }
+    .bed-order-header .bed-info p { font-size: 12px; color: var(--text-secondary); margin: 2px 0; }
+    .bed-order-list { max-height: 400px; overflow-y: auto; }
+    .bed-order-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .bed-order-item:last-child { border-bottom: none; }
+    .bed-order-item .o-left { flex: 1; }
+    .bed-order-item .o-id { font-weight: 600; font-size: 13px; }
+    .bed-order-item .o-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .bed-order-item .o-right { text-align: right; }
+    .bed-order-item .o-price { font-size: 15px; font-weight: 600; color: var(--danger); }
+    .bed-order-item .o-time { font-size: 11px; color: #aaa; margin-top: 2px; }
+    .bed-order-empty { text-align: center; padding: 40px 0; color: #ccc; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div id="login-page">
+  <div class="login-box">
+    <h1>🏥 医院点餐管理系统</h1>
+    <div class="subtitle">Hospital Meal Ordering Management</div>
+    <div class="form-group">
+      <label>用户名</label>
+      <input type="text" id="login-username" placeholder="请输入用户名" value="admin">
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <input type="password" id="login-password" placeholder="请输入密码" value="admin123">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="doLogin()">登 录</button>
+  </div>
+</div>
+
+<div id="admin-page">
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-logo"><span>🏥</span>点餐管理后台</div>
+      <ul class="sidebar-menu">
+        <li class="active" onclick="switchPanel('dashboard')"><span class="icon">📊</span> 数据概览</li>
+        <li onclick="switchPanel('orders')"><span class="icon">📋</span> 订单管理</li>
+        <li onclick="switchPanel('categories')"><span class="icon">📂</span> 分类管理</li>
+        <li onclick="switchPanel('dishes')"><span class="icon">🍽️</span> 菜品管理</li>
+        <li onclick="switchPanel('beds')"><span class="icon">🛏️</span> 床位管理</li>
+        <li onclick="switchPanel('refunds')"><span class="icon">💰</span> 退款管理</li>
+        <li onclick="switchPanel('staffmgr')"><span class="icon">👨‍🍳</span> 员工管理</li>
+      </ul>
+    </div>
+    <div class="main-content">
+      <div class="topbar">
+        <div class="topbar-title" id="topbar-title">数据概览</div>
+        <div class="topbar-user">
+          <span class="name" id="admin-name">管理员</span>
+          <button class="btn-logout" onclick="doLogout()">退出</button>
+        </div>
+      </div>
+      <div class="content-area">
+
+        <!-- Dashboard -->
+        <div class="panel active" id="panel-dashboard">
+          <div class="stats-grid">
+            <div class="stat-card blue">
+              <div class="label">今明两日订单</div>
+              <div class="value" id="stat-orders">0</div>
+            </div>
+            <div class="stat-card green">
+              <div class="label">今明两日营收</div>
+              <div class="value" id="stat-revenue">¥0</div>
+            </div>
+            <div class="stat-card orange">
+              <div class="label">配送中</div>
+              <div class="value" id="stat-delivering">0</div>
+            </div>
+            <div class="stat-card red">
+              <div class="label">已送达</div>
+              <div class="value" id="stat-delivered-count">0</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>最近订单</h3></div>
+            <div class="card-body">
+              <table><thead><tr>
+                <th>订单号</th><th>患者</th><th>手机号</th><th>床位</th><th>餐次</th><th>金额</th><th>状态</th><th>时间</th>
+              </tr></thead><tbody id="dashboard-orders"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Orders -->
+        <div class="panel" id="panel-orders">
+          <div class="card">
+            <div class="card-header">
+              <h3>订单管理</h3>
+              <div class="toolbar">
+                <input type="date" id="order-date-filter" onchange="loadOrders()">
+                <select id="order-status-filter" onchange="loadOrders()">
+                  <option value="">全部状态</option>
+                  <option value="paid">已支付</option>
+                  <option value="delivering">配送中</option>
+                  <option value="delivered">已送达</option>
+                  <option value="refunding">退款中</option>
+                  <option value="refunded">退款完成</option>
+                  <option value="cancelled">废弃</option>
+                  <option value="user_cancelled">已取消</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <table><thead><tr>
+                <th>订单号</th><th>患者</th><th>手机号</th><th>床位</th><th>餐次</th><th>金额</th><th>状态</th><th>时间</th><th>操作</th>
+              </tr></thead><tbody id="orders-tbody"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="panel" id="panel-categories">
+          <div class="card">
+            <div class="card-header">
+              <h3>分类管理</h3>
+              <button class="btn btn-primary btn-sm" onclick="showCategoryModal()">+ 添加分类</button>
+            </div>
+            <div class="card-body">
+              <table><thead><tr>
+                <th>ID</th><th>名称</th><th>排序</th><th>状态</th><th>操作</th>
+              </tr></thead><tbody id="categories-tbody"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dishes -->
+        <div class="panel" id="panel-dishes">
+          <div class="card">
+            <div class="card-header">
+              <h3>菜品管理</h3>
+              <div class="toolbar">
+                <select id="dish-cat-filter" onchange="loadDishes()"><option value="">全部分类</option></select>
+                <button class="btn btn-primary btn-sm" onclick="showDishModal()">+ 添加菜品</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <table><thead><tr>
+                <th>ID</th><th>菜名</th><th>分类</th><th>价格</th><th>库存</th><th>排序</th><th>上架</th><th>操作</th>
+              </tr></thead><tbody id="dishes-tbody"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Beds -->
+        <div class="panel" id="panel-beds">
+          <div class="bed-building-tabs" id="bed-building-tabs"></div>
+          <div class="bed-floor-bar" id="bed-floor-bar"></div>
+          <div class="bed-grid-container" id="bed-grid-container"></div>
+        </div>
+
+        <!-- Refunds -->
+        <div class="panel" id="panel-refunds">
+          <div class="card">
+            <div class="card-header">
+              <h3>退款管理 <span id="refund-count-badge" style="font-size:12px;color:var(--danger);font-weight:400;"></span></h3>
+              <div class="toolbar">
+                <button class="btn btn-success btn-sm" onclick="batchRefund('refunded')">批量确认退款</button>
+                <button class="btn btn-danger btn-sm" onclick="batchRefund('cancelled')">批量废弃</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <table>
+                <thead><tr>
+                  <th style="width:40px;"><input type="checkbox" id="refund-check-all" onchange="toggleRefundCheckAll(this.checked)"></th>
+                  <th>订单号</th><th>患者</th><th>手机号</th><th>床位</th><th>餐次</th><th>金额</th><th>操作</th>
+                </tr></thead>
+                <tbody id="refunds-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Staff Management -->
+        <div class="panel" id="panel-staffmgr">
+          <div class="card">
+            <div class="card-header">
+              <h3>员工管理</h3>
+            </div>
+            <div class="card-body">
+              <h4 style="margin:8px 0;">👨‍🍳 厨师</h4>
+              <table><thead><tr><th>ID</th><th>姓名</th><th>手机号</th><th>状态</th></tr></thead><tbody id="chefs-tbody"></tbody></table>
+              <h4 style="margin:16px 0 8px;">🚴 配送员</h4>
+              <table><thead><tr><th>ID</th><th>姓名</th><th>手机号</th><th>状态</th><th>当前配送</th></tr></thead><tbody id="couriers-tbody"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="modal-category">
+  <div class="modal">
+    <h3 id="modal-category-title">添加分类</h3>
+    <input type="hidden" id="cat-edit-id">
+    <div class="form-group"><label>分类名称</label><input type="text" id="cat-name" placeholder="如：营养粥品"></div>
+    <div class="form-group"><label>排序</label><input type="number" id="cat-sort" value="0"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-category')">取消</button>
+      <button class="btn btn-primary" onclick="saveCategory()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-dish">
+  <div class="modal">
+    <h3 id="modal-dish-title">添加菜品</h3>
+    <input type="hidden" id="dish-edit-id">
+    <div class="form-group"><label>菜品名称</label><input type="text" id="dish-name" placeholder="菜名"></div>
+    <div class="form-group"><label>所属分类</label><select id="dish-category"></select></div>
+    <div class="form-group"><label>价格（元）</label><input type="number" step="0.1" id="dish-price" value="0"></div>
+    <div class="form-group"><label>描述</label><input type="text" id="dish-desc" placeholder="简短描述"></div>
+    <div class="form-group"><label>库存</label><input type="number" id="dish-stock" value="50" min="0"></div>
+    <div class="form-group"><label>排序</label><input type="number" id="dish-sort" value="0"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-dish')">取消</button>
+      <button class="btn btn-primary" onclick="saveDish()">保存</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="modal-order-detail">
+  <div class="modal">
+    <h3>订单详情</h3>
+    <div id="order-detail-content"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-order-detail')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-bed-orders">
+  <div class="modal modal-wide">
+    <h3>🛏️ 床位订单记录</h3>
+    <div id="bed-order-content"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-bed-orders')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let currentUser = null;
+
+const mealNames = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐' };
+const statusNames = { paid: '已支付', delivering: '配送中', delivered: '已送达', refunding: '退款中', refunded: '已退款', cancelled: '废弃', user_cancelled: '已取消' };
+const statusTags = { paid: 'blue', delivering: 'orange', delivered: 'green', refunding: 'red', refunded: 'gray', cancelled: 'gray', user_cancelled: 'gray' };
+
+function getToday() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function getTomorrow() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+async function api(url, opts = {}) {
+  const res = await fetch(API + url, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  return res.json();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+
+// --- Auth ---
+async function doLogin() {
+  const username = document.getElementById('login-username').value;
+  const password = document.getElementById('login-password').value;
+  const res = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+  if (res.code === 0) {
+    currentUser = res.data;
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('admin-page').style.display = 'block';
+    document.getElementById('admin-name').textContent = currentUser.username;
+    document.getElementById('order-date-filter').value = '';
+    loadDashboard();
+  } else {
+    alert(res.msg || '登录失败');
+  }
+}
+function doLogout() {
+  currentUser = null;
+  document.getElementById('admin-page').style.display = 'none';
+  document.getElementById('login-page').style.display = 'flex';
+}
+
+// --- Navigation ---
+const panelTitles = { dashboard: '数据概览', orders: '订单管理', categories: '分类管理', dishes: '菜品管理', beds: '床位管理', refunds: '退款管理', staffmgr: '员工管理' };
+function switchPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelectorAll('.sidebar-menu li').forEach((li, i) => li.classList.toggle('active', li.textContent.trim().includes(panelTitles[name])));
+  document.getElementById('topbar-title').textContent = panelTitles[name] || '';
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'orders') loadOrders();
+  if (name === 'categories') loadCategories();
+  if (name === 'dishes') { loadDishCategoryFilter(); loadDishes(); }
+  if (name === 'beds') loadBeds();
+  if (name === 'refunds') loadRefunds();
+  if (name === 'staffmgr') loadStaffMgr();
+}
+
+// --- Dashboard ---
+async function loadDashboard() {
+  const today = getToday();
+  const tomorrow = getTomorrow();
+  const [statsTodayRes, statsTmrRes, ordersRes] = await Promise.all([
+    api('/orders/stats/daily?date=' + today),
+    api('/orders/stats/daily?date=' + tomorrow),
+    api('/orders')
+  ]);
+  const s1 = statsTodayRes.data || {};
+  const s2 = statsTmrRes.data || {};
+  document.getElementById('stat-orders').textContent = (s1.order_count || 0) + (s2.order_count || 0);
+  document.getElementById('stat-revenue').textContent = '¥' + ((s1.total_revenue || 0) + (s2.total_revenue || 0)).toFixed(1);
+  document.getElementById('stat-delivering').textContent = (s1.delivering_count || 0) + (s2.delivering_count || 0);
+  document.getElementById('stat-delivered-count').textContent = (s1.delivered_count || 0) + (s2.delivered_count || 0);
+
+  const orders = (ordersRes.data || []).slice(0, 50);
+  document.getElementById('dashboard-orders').innerHTML = orders.map(o => `<tr>
+    <td>#${o.id}</td><td>${o.patient_name||'-'}</td>
+    <td>${o.patient_phone||'-'}</td>
+    <td>${o.building ? o.building + (o.patient_bed ? ' ' + o.patient_bed : '') : '-'}</td>
+    <td>${mealNames[o.meal_type]||o.meal_type}</td>
+    <td style="color:var(--danger)">¥${o.total_price}</td>
+    <td><span class="tag tag-${statusTags[o.status]||'gray'}">${statusNames[o.status]||o.status}</span></td>
+    <td>${o.order_date||''}</td></tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:24px;color:#999;">暂无订单</td></tr>';
+}
+
+// --- Orders ---
+async function loadOrders() {
+  const date = document.getElementById('order-date-filter').value;
+  const status = document.getElementById('order-status-filter').value;
+  let url = '/orders?';
+  if (date) url += 'date=' + date + '&';
+  if (status) url += 'status=' + status;
+  const res = await api(url);
+  const orders = res.data || [];
+  document.getElementById('orders-tbody').innerHTML = orders.map(o => `<tr>
+    <td>#${o.id}</td><td>${o.patient_name||'-'}</td>
+    <td>${o.patient_phone||'-'}</td>
+    <td>${o.building ? o.building + (o.patient_bed ? ' ' + o.patient_bed : '') : '-'}</td>
+    <td>${mealNames[o.meal_type]||o.meal_type}</td>
+    <td style="color:var(--danger)">¥${o.total_price}</td>
+    <td><span class="tag tag-${statusTags[o.status]||'gray'}">${statusNames[o.status]||o.status}</span></td>
+    <td>${o.created_at||''}</td>
+    <td>
+      <button class="btn btn-primary btn-sm" onclick="viewOrder(${o.id})">详情</button>
+      ${o.status==='paid' ? `<button class="btn btn-warning btn-sm" onclick="updateOrderStatus(${o.id},'delivering')">开始配送</button>` : ''}
+      ${o.status==='delivering' ? `<button class="btn btn-success btn-sm" onclick="updateOrderStatus(${o.id},'delivered')">已送达</button>` : ''}
+    </td></tr>`).join('') || '<tr><td colspan="9" style="text-align:center;padding:24px;color:#999;">暂无订单</td></tr>';
+}
+
+async function viewOrder(id) {
+  const res = await api('/orders/' + id);
+  if (res.code !== 0) return;
+  const o = res.data;
+  document.getElementById('order-detail-content').innerHTML = `
+    <p><strong>订单号：</strong>#${o.id}</p>
+    <p><strong>患者：</strong>${o.patient_name||'-'}（${o.patient_phone||'-'}）</p>
+    <p><strong>床位：</strong>${o.building ? o.building + (o.patient_bed ? ' ' + o.patient_bed : '') : '未设置'}</p>
+    <p><strong>餐次：</strong>${mealNames[o.meal_type]||o.meal_type}</p>
+    <p><strong>日期：</strong>${o.order_date}</p>
+    <p><strong>状态：</strong><span class="tag tag-${statusTags[o.status]}">${statusNames[o.status]}</span></p>
+    <p><strong>备注：</strong>${o.remark || '无'}</p>
+    ${o.chef_id ? `<p><strong>厨师：</strong>#${o.chef_id}</p>` : ''}
+    ${o.courier_id ? `<p><strong>配送员：</strong>#${o.courier_id}</p>` : ''}
+    ${o.status === 'user_cancelled' && o.cancel_reason ? `<hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0"><p><strong>取消原因：</strong>${o.cancel_reason}</p>${o.cancel_desc ? `<p><strong>补充说明：</strong>${o.cancel_desc}</p>` : ''}` : ''}
+    ${['refunding','refunded','cancelled'].includes(o.status) && o.refund_reason ? `<hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0"><p><strong>退款原因：</strong>${o.refund_reason}</p>${o.refund_desc ? `<p><strong>问题描述：</strong>${o.refund_desc}</p>` : ''}` : ''}
+    <h4 style="margin-top:16px;">菜品明细</h4>
+    <div class="order-detail-items">
+      ${(o.items||[]).map(i => `<div class="item"><span>${i.dish_name} × ${i.quantity}</span><span>¥${(i.price*i.quantity).toFixed(1)}</span></div>`).join('')}
+    </div>
+    ${o.status_logs && o.status_logs.length > 0 ? `<h4 style="margin-top:16px;">状态变更记录</h4><div style="padding:8px 0;">${o.status_logs.map(l => `<p style="font-size:13px;color:#666;margin:4px 0;"><span class="tag tag-${statusTags[l.status]||'gray'}" style="font-size:11px;">${statusNames[l.status]||l.status}</span> <span style="margin-left:8px;">${l.created_at}</span></p>`).join('')}</div>` : ''}
+    <p style="text-align:right;font-size:16px;font-weight:600;margin-top:12px;">合计：<span style="color:var(--danger)">¥${o.total_price}</span></p>`;
+  openModal('modal-order-detail');
+}
+
+async function updateOrderStatus(id, status) {
+  await api('/orders/' + id + '/status', { method: 'PUT', body: JSON.stringify({ status }) });
+  loadOrders();
+  loadDashboard();
+}
+
+// --- Categories ---
+async function loadCategories() {
+  const res = await api('/categories');
+  const cats = res.data || [];
+  document.getElementById('categories-tbody').innerHTML = cats.map(c => `<tr>
+    <td>${c.id}</td><td>${c.name}</td><td>${c.sort_order}</td>
+    <td>
+      <label class="toggle"><input type="checkbox" ${c.is_active ? 'checked' : ''} onchange="toggleCategory(${c.id}, this.checked)"><span class="toggle-slider"></span></label>
+    </td>
+    <td>
+      <button class="btn btn-primary btn-sm" onclick="editCategory(${c.id},'${c.name}',${c.sort_order})">编辑</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteCategory(${c.id})">删除</button>
+    </td></tr>`).join('');
+}
+
+function showCategoryModal() {
+  document.getElementById('modal-category-title').textContent = '添加分类';
+  document.getElementById('cat-edit-id').value = '';
+  document.getElementById('cat-name').value = '';
+  document.getElementById('cat-sort').value = '0';
+  openModal('modal-category');
+}
+
+function editCategory(id, name, sort) {
+  document.getElementById('modal-category-title').textContent = '编辑分类';
+  document.getElementById('cat-edit-id').value = id;
+  document.getElementById('cat-name').value = name;
+  document.getElementById('cat-sort').value = sort;
+  openModal('modal-category');
+}
+
+async function saveCategory() {
+  const id = document.getElementById('cat-edit-id').value;
+  const name = document.getElementById('cat-name').value.trim();
+  const sort_order = parseInt(document.getElementById('cat-sort').value) || 0;
+  if (!name) return alert('请输入分类名称');
+  if (id) {
+    await api('/categories/' + id, { method: 'PUT', body: JSON.stringify({ name, sort_order }) });
+  } else {
+    await api('/categories', { method: 'POST', body: JSON.stringify({ name, sort_order }) });
+  }
+  closeModal('modal-category');
+  loadCategories();
+}
+
+async function toggleCategory(id, active) {
+  await api('/categories/' + id, { method: 'PUT', body: JSON.stringify({ is_active: active ? 1 : 0 }) });
+}
+
+async function deleteCategory(id) {
+  if (!confirm('确定删除此分类？')) return;
+  const res = await api('/categories/' + id, { method: 'DELETE' });
+  if (res.code !== 0) alert(res.msg);
+  loadCategories();
+}
+
+// --- Dishes ---
+async function loadDishCategoryFilter() {
+  const res = await api('/categories');
+  const cats = res.data || [];
+  const sel = document.getElementById('dish-cat-filter');
+  sel.innerHTML = '<option value="">全部分类</option>' + cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  const editSel = document.getElementById('dish-category');
+  editSel.innerHTML = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+async function loadDishes() {
+  const catId = document.getElementById('dish-cat-filter').value;
+  let url = '/dishes';
+  if (catId) url += '?category_id=' + catId;
+  const res = await api(url);
+  const dishes = res.data || [];
+  document.getElementById('dishes-tbody').innerHTML = dishes.map(d => `<tr>
+    <td>${d.id}</td><td>${d.name}</td><td>${d.category_name||'-'}</td>
+    <td>¥${d.price}</td>
+    <td><span style="color:${d.stock <= 0 ? 'var(--danger);font-weight:600' : d.stock <= 10 ? '#faad14' : '#52c41a'}">${d.stock}</span>
+      <button class="btn btn-sm" style="margin-left:4px;padding:0 6px;font-size:11px;" onclick="editStock(${d.id}, ${d.stock})">改</button></td>
+    <td>${d.sort_order}</td>
+    <td>
+      <label class="toggle"><input type="checkbox" ${d.is_available ? 'checked' : ''} onchange="toggleDish(${d.id}, this.checked)"><span class="toggle-slider"></span></label>
+    </td>
+    <td>
+      <button class="btn btn-primary btn-sm" onclick='editDish(${JSON.stringify(d)})'>编辑</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteDish(${d.id})">删除</button>
+    </td></tr>`).join('');
+}
+
+function showDishModal() {
+  document.getElementById('modal-dish-title').textContent = '添加菜品';
+  document.getElementById('dish-edit-id').value = '';
+  document.getElementById('dish-name').value = '';
+  document.getElementById('dish-price').value = '0';
+  document.getElementById('dish-desc').value = '';
+  document.getElementById('dish-stock').value = '50';
+  document.getElementById('dish-sort').value = '0';
+  openModal('modal-dish');
+}
+
+function editDish(d) {
+  document.getElementById('modal-dish-title').textContent = '编辑菜品';
+  document.getElementById('dish-edit-id').value = d.id;
+  document.getElementById('dish-name').value = d.name;
+  document.getElementById('dish-category').value = d.category_id;
+  document.getElementById('dish-price').value = d.price;
+  document.getElementById('dish-desc').value = d.description || '';
+  document.getElementById('dish-stock').value = d.stock || 0;
+  document.getElementById('dish-sort').value = d.sort_order;
+  openModal('modal-dish');
+}
+
+async function saveDish() {
+  const id = document.getElementById('dish-edit-id').value;
+  const data = {
+    name: document.getElementById('dish-name').value.trim(),
+    category_id: parseInt(document.getElementById('dish-category').value),
+    price: parseFloat(document.getElementById('dish-price').value) || 0,
+    description: document.getElementById('dish-desc').value,
+    stock: parseInt(document.getElementById('dish-stock').value) || 0,
+    sort_order: parseInt(document.getElementById('dish-sort').value) || 0,
+  };
+  if (!data.name) return alert('请输入菜品名称');
+  if (id) {
+    await api('/dishes/' + id, { method: 'PUT', body: JSON.stringify(data) });
+  } else {
+    await api('/dishes', { method: 'POST', body: JSON.stringify(data) });
+  }
+  closeModal('modal-dish');
+  loadDishes();
+}
+
+async function editStock(id, currentStock) {
+  const val = prompt('请输入新的库存数量：', currentStock);
+  if (val === null) return;
+  const num = parseInt(val);
+  if (isNaN(num) || num < 0) return alert('库存必须为非负整数');
+  await api('/dishes/' + id + '/stock', { method: 'PUT', body: JSON.stringify({ stock: num }) });
+  loadDishes();
+}
+
+async function toggleDish(id, available) {
+  await api('/dishes/' + id, { method: 'PUT', body: JSON.stringify({ is_available: available ? 1 : 0 }) });
+}
+
+async function deleteDish(id) {
+  if (!confirm('确定删除此菜品？')) return;
+  await api('/dishes/' + id, { method: 'DELETE' });
+  loadDishes();
+}
+
+// --- Beds (Visual) ---
+const bedBuildings = [
+  { name: '住院部 1 号楼', floors: 11, bedsPerFloor: 87 },
+  { name: '住院部 2 号楼', floors: 20, bedsPerFloor: 101 },
+  { name: '住院部 3 号楼', floors: 9, bedsPerFloor: 15 },
+  { name: '住院部 4 号楼', floors: 27, bedsPerFloor: 55 },
+];
+let bedState = { buildingIdx: 0, floor: 1, patients: [] };
+
+async function loadBeds() {
+  const res = await api('/patients');
+  bedState.patients = res.data || [];
+  renderBuildingTabs();
+  renderFloorBar();
+  renderBedGrid();
+}
+
+function renderBuildingTabs() {
+  const el = document.getElementById('bed-building-tabs');
+  el.innerHTML = bedBuildings.map((b, i) => `
+    <div class="bed-building-tab ${i === bedState.buildingIdx ? 'active' : ''}" onclick="selectBuilding(${i})">
+      <span class="tab-icon">🏥</span>
+      ${b.name}
+      <div class="tab-info">${b.floors}层 · 每层${b.bedsPerFloor}床</div>
+    </div>`).join('');
+}
+
+function renderFloorBar() {
+  const b = bedBuildings[bedState.buildingIdx];
+  const el = document.getElementById('bed-floor-bar');
+  let html = '';
+  for (let f = 1; f <= b.floors; f++) {
+    html += `<button class="bed-floor-btn ${f === bedState.floor ? 'active' : ''}" onclick="selectFloor(${f})">${f}层</button>`;
+  }
+  el.innerHTML = html;
+}
+
+function selectBuilding(idx) {
+  bedState.buildingIdx = idx;
+  bedState.floor = 1;
+  renderBuildingTabs();
+  renderFloorBar();
+  renderBedGrid();
+}
+
+function selectFloor(f) {
+  bedState.floor = f;
+  document.querySelectorAll('.bed-floor-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.bed-floor-btn')[f - 1].classList.add('active');
+  renderBedGrid();
+}
+
+function getBedName(floor, bedIdx) {
+  return String(floor) + String(bedIdx).padStart(3, '0');
+}
+
+function renderBedGrid() {
+  const b = bedBuildings[bedState.buildingIdx];
+  const floor = bedState.floor;
+  const buildingName = b.name;
+  const patientMap = {};
+  bedState.patients.forEach(p => {
+    if (p.building === buildingName && p.bed_number) patientMap[p.bed_number] = p;
+  });
+
+  let occupiedCount = 0;
+  let cells = '';
+  for (let i = 1; i <= b.bedsPerFloor; i++) {
+    const bedName = getBedName(floor, i);
+    const patient = patientMap[bedName];
+    const isOccupied = !!patient;
+    if (isOccupied) occupiedCount++;
+    const patientLabel = patient ? patient.name : '';
+    const safeBuilding = buildingName.replace(/'/g, "\\'");
+    cells += `<div class="bed-cell ${isOccupied ? 'occupied' : 'empty'}" onclick="clickBed('${safeBuilding}','${bedName}')" title="${buildingName} ${bedName}床${patient ? ' - ' + patient.name : ''}">
+      ${bedName}
+      ${patientLabel ? `<span class="cell-patient">${patientLabel}</span>` : ''}
+    </div>`;
+  }
+
+  const el = document.getElementById('bed-grid-container');
+  el.innerHTML = `
+    <div class="bed-grid-title">
+      ${buildingName} - ${floor}层
+      <span class="bed-count">共 ${b.bedsPerFloor} 床 · 在住 ${occupiedCount} · 空余 ${b.bedsPerFloor - occupiedCount}</span>
+    </div>
+    <div class="bed-grid-legend">
+      <span><span class="dot dot-occupied"></span> 有患者</span>
+      <span><span class="dot dot-empty"></span> 空床</span>
+    </div>
+    <div class="bed-grid">${cells}</div>`;
+}
+
+async function clickBed(building, bedNumber) {
+  const res = await api('/orders/by-bed?building=' + encodeURIComponent(building) + '&bed_number=' + encodeURIComponent(bedNumber));
+  const data = res.data || {};
+  const patient = data.patient;
+  const orders = data.orders || [];
+
+  let headerHtml;
+  if (patient) {
+    headerHtml = `
+      <div class="bed-order-header">
+        <div class="bed-icon">🛏️</div>
+        <div class="bed-info">
+          <h4>${building} · ${bedNumber}床</h4>
+          <p>👤 患者：${patient.name}</p>
+          <p>📱 手机：${patient.phone}</p>
+          <p>📋 共 ${orders.length} 笔订单</p>
+        </div>
+      </div>`;
+  } else {
+    headerHtml = `
+      <div class="bed-order-header">
+        <div class="bed-icon">🛏️</div>
+        <div class="bed-info">
+          <h4>${building} · ${bedNumber}床</h4>
+          <p style="color:#aaa;">当前无患者入住</p>
+        </div>
+      </div>`;
+  }
+
+  let listHtml;
+  if (orders.length === 0) {
+    listHtml = '<div class="bed-order-empty">暂无订单记录</div>';
+  } else {
+    listHtml = '<div class="bed-order-list">' + orders.map(o => `
+      <div class="bed-order-item">
+        <div class="o-left">
+          <div class="o-id">#${o.id} · ${mealNames[o.meal_type] || o.meal_type}</div>
+          <div class="o-meta">${o.order_date} · <span class="tag tag-${statusTags[o.status] || 'gray'}">${statusNames[o.status] || o.status}</span></div>
+        </div>
+        <div class="o-right">
+          <div class="o-price">¥${o.total_price}</div>
+          <div class="o-time">${o.created_at || ''}</div>
+        </div>
+      </div>`).join('') + '</div>';
+  }
+
+  document.getElementById('bed-order-content').innerHTML = headerHtml + listHtml;
+  openModal('modal-bed-orders');
+}
+
+// --- Refunds ---
+let refundOrders = [];
+
+async function loadRefunds() {
+  const res = await api('/orders?status=refunding');
+  refundOrders = res.data || [];
+  document.getElementById('refund-count-badge').textContent = refundOrders.length > 0 ? `（${refundOrders.length}笔待处理）` : '';
+  document.getElementById('refund-check-all').checked = false;
+
+  if (refundOrders.length === 0) {
+    document.getElementById('refunds-tbody').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:#999;">暂无退款中的订单</td></tr>';
+    return;
+  }
+
+  const detailsPromises = refundOrders.map(o => api('/orders/' + o.id));
+  const detailsResults = await Promise.all(detailsPromises);
+  const detailMap = {};
+  detailsResults.forEach(r => { if (r.code === 0) detailMap[r.data.id] = r.data; });
+
+  document.getElementById('refunds-tbody').innerHTML = refundOrders.map(o => {
+    const detail = detailMap[o.id] || {};
+    const reason = detail.refund_reason || '-';
+    return `<tr>
+    <td><input type="checkbox" class="refund-check" value="${o.id}"></td>
+    <td>#${o.id}</td><td>${o.patient_name||'-'}</td>
+    <td>${o.patient_phone||'-'}</td>
+    <td>${o.building ? o.building + (o.patient_bed ? ' ' + o.patient_bed : '') : '-'}</td>
+    <td>${mealNames[o.meal_type]||o.meal_type}</td>
+    <td style="color:var(--danger)">¥${o.total_price}</td>
+    <td>
+      <button class="btn btn-primary btn-sm" onclick="viewRefundDetail(${o.id})">查看原因</button>
+      <button class="btn btn-success btn-sm" onclick="singleRefund(${o.id},'refunded')">确认退款</button>
+      <button class="btn btn-danger btn-sm" onclick="singleRefund(${o.id},'cancelled')">废弃</button>
+    </td></tr>`;
+  }).join('');
+}
+
+async function viewRefundDetail(id) {
+  const res = await api('/orders/' + id);
+  if (res.code !== 0) return;
+  const o = res.data;
+  let imgs = [];
+  try { imgs = JSON.parse(o.refund_images || '[]'); } catch(e) {}
+  document.getElementById('order-detail-content').innerHTML = `
+    <p><strong>订单号：</strong>#${o.id}</p>
+    <p><strong>患者：</strong>${o.patient_name||'-'}（${o.patient_phone||'-'}）</p>
+    <p><strong>餐次：</strong>${mealNames[o.meal_type]||o.meal_type}（${o.order_date}）</p>
+    <p><strong>金额：</strong><span style="color:var(--danger)">¥${o.total_price}</span></p>
+    <hr style="margin:12px 0;border:none;border-top:1px solid #f0f0f0">
+    <p><strong>退款原因：</strong>${o.refund_reason || '-'}</p>
+    ${o.refund_desc ? `<p><strong>问题描述：</strong>${o.refund_desc}</p>` : ''}
+    ${imgs.length > 0 ? `<p><strong>退款凭证：</strong></p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">${imgs.map(u => `<img src="${u}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="window.open('${u}')">`).join('')}</div>` : ''}
+    <h4 style="margin-top:16px;">菜品明细</h4>
+    <div class="order-detail-items">
+      ${(o.items||[]).map(i => `<div class="item"><span>${i.dish_name} × ${i.quantity}</span><span>¥${(i.price*i.quantity).toFixed(1)}</span></div>`).join('')}
+    </div>`;
+  openModal('modal-order-detail');
+}
+
+function toggleRefundCheckAll(checked) {
+  document.querySelectorAll('.refund-check').forEach(cb => cb.checked = checked);
+}
+
+function getCheckedRefundIds() {
+  return Array.from(document.querySelectorAll('.refund-check:checked')).map(cb => parseInt(cb.value));
+}
+
+async function singleRefund(id, status) {
+  const label = status === 'refunded' ? '确认退款' : '废弃';
+  if (!confirm(`确定要将此订单${label}？`)) return;
+  await api('/orders/' + id + '/status', { method: 'PUT', body: JSON.stringify({ status }) });
+  loadRefunds();
+  loadDashboard();
+}
+
+async function batchRefund(status) {
+  const ids = getCheckedRefundIds();
+  if (ids.length === 0) return alert('请先勾选要操作的订单');
+  const label = status === 'refunded' ? '确认退款' : '废弃';
+  if (!confirm(`确定要将选中的 ${ids.length} 笔订单${label}？`)) return;
+  await api('/orders/batch-status', { method: 'PUT', body: JSON.stringify({ ids, status }) });
+  loadRefunds();
+  loadDashboard();
+}
+
+// --- Staff Management ---
+async function loadStaffMgr() {
+  const [chefRes, courierRes] = await Promise.all([api('/staff?role=chef'), api('/staff?role=courier')]);
+  const chefs = chefRes.data || [];
+  const couriers = courierRes.data || [];
+  document.getElementById('chefs-tbody').innerHTML = chefs.map(s => `<tr>
+    <td>${s.id}</td><td>${s.name}</td><td>${s.phone}</td>
+    <td><span class="tag tag-${s.is_active ? 'green' : 'gray'}">${s.is_active ? '在岗' : '停用'}</span></td>
+  </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:#999;">暂无厨师</td></tr>';
+
+  const deliveringCounts = {};
+  const ordersRes = await api('/orders?status=delivering');
+  (ordersRes.data || []).forEach(o => { if (o.courier_id) deliveringCounts[o.courier_id] = (deliveringCounts[o.courier_id]||0) + 1; });
+
+  document.getElementById('couriers-tbody').innerHTML = couriers.map(s => `<tr>
+    <td>${s.id}</td><td>${s.name}</td><td>${s.phone}</td>
+    <td><span class="tag tag-${s.is_active ? 'green' : 'gray'}">${s.is_active ? '在岗' : '停用'}</span></td>
+    <td>${deliveringCounts[s.id] || 0} 单</td>
+  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:#999;">暂无配送员</td></tr>';
+}
+</script>
+</body>
+</html>
