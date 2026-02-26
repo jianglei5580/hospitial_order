@@ -1,40 +1,45 @@
 # 🏥 医院点餐系统 (Hospital Meal Ordering System)
 
-一个完整的医院患者点餐系统，包含患者端 Cordova APP 和后台管理系统。
+一个完整的医院患者点餐系统，包含患者端 APP、厨师/配送员工作台和后台管理系统。
 
 ## 项目结构
 
 ```
 HopspitalOrder/
-├── app/                    # Cordova 患者端 APP
-│   ├── www/               # 前端页面
-│   │   ├── css/           # 样式
-│   │   ├── js/            # 逻辑
-│   │   └── index.html     # 入口
-│   └── config.xml         # Cordova 配置
-├── server/                # 后端服务
-│   ├── routes/            # API 路由
-│   │   ├── auth.js        # 登录认证
-│   │   ├── categories.js  # 分类管理
-│   │   ├── dishes.js      # 菜品管理
-│   │   ├── beds.js        # 床位管理
-│   │   ├── orders.js      # 订单管理
-│   │   └── upload.js      # 图片上传
-│   ├── uploads/           # 上传文件目录
-│   ├── database.js        # 数据库初始化
-│   ├── index.js           # 服务入口
+├── app/                    # 患者端 APP
+│   └── www/
+│       ├── css/index.css   # 样式
+│       ├── js/index.js     # 逻辑
+│       └── index.html      # 入口
+├── staff/                  # 厨师/配送员工作台
+│   └── index.html          # 单文件应用
+├── admin/                  # 后台管理系统
+│   └── index.html          # 管理后台页面
+├── server/                 # 后端服务
+│   ├── routes/
+│   │   ├── auth.js         # 管理员登录认证
+│   │   ├── patients.js     # 患者注册/登录
+│   │   ├── categories.js   # 分类管理
+│   │   ├── dishes.js       # 菜品管理（含库存）
+│   │   ├── beds.js         # 床位管理
+│   │   ├── orders.js       # 订单管理（含退款/取消）
+│   │   ├── staff.js        # 厨师/配送员 API
+│   │   └── upload.js       # 图片上传
+│   ├── uploads/            # 上传文件目录
+│   ├── database.js         # 数据库初始化
+│   ├── db-helper.js        # 数据库操作工具
+│   ├── index.js            # 服务入口
 │   └── package.json
-├── admin/                 # 后台管理系统前端
-│   └── index.html         # 管理后台页面
 └── README.md
 ```
 
 ## 技术栈
 
-- **患者端 APP**: Cordova + 原生 HTML/CSS/JS（移动端适配）
-- **后台管理**: 纯 HTML/CSS/JS 单页应用
+- **患者端 APP**: 原生 HTML/CSS/JS（移动端适配）
+- **厨师/配送员端**: 原生 HTML/CSS/JS 单文件应用
+- **后台管理**: 原生 HTML/CSS/JS 单页应用
 - **后端服务**: Node.js + Express
-- **数据库**: SQLite (better-sqlite3)
+- **数据库**: SQLite (sql.js)
 - **文件上传**: Multer
 
 ## 快速启动
@@ -47,61 +52,136 @@ npm install
 npm start
 ```
 
-服务启动后访问：
-- API 服务：http://localhost:3000
-- 后台管理：http://localhost:3000/admin
+### 2. 访问地址
 
-### 2. 后台管理登录
+| 入口 | 地址 | 说明 |
+|------|------|------|
+| 患者端 | http://localhost:3000/app | 患者点餐、查看订单 |
+| 厨师/配送员 | http://localhost:3000/staff | 厨师制作、配送员送达 |
+| 后台管理 | http://localhost:3000/admin | 管理员后台 |
 
-默认账号：
-- 用户名：`admin`
-- 密码：`admin123`
+### 3. 默认账号
 
-### 3. 患者端 APP
+**管理员后台：**
+- 用户名：`admin` / 密码：`admin123`
 
-开发模式下，直接在浏览器打开 `app/www/index.html` 即可预览。
+**患者端：**
+- 已预置 100 个测试患者，密码统一为 `qwer1234`
 
-如需构建为手机 APP：
-```bash
-cd app
-cordova platform add android   # 或 ios
-cordova build
-```
+**厨师/配送员（密码均为 `qwer1234`）：**
 
-> 注意：患者端 APP 中的 API 地址默认为 `http://localhost:3000/api`，部署时需修改 `app/www/js/index.js` 中的 `API_BASE` 变量。
+| 角色 | 姓名 | 用途 |
+|------|------|------|
+| 👨‍🍳 厨师 ×5 | 王大厨、李师傅、张厨神、赵铁勺、周美食 | 登录后查看待制作订单 |
+| 🚴 配送员 ×10 | 刘快递、陈飞跑、杨闪送 等 | 登录后查看待配送订单 |
+
+> 手机号可在管理后台「员工管理」中查看
 
 ## 功能特性
 
 ### 患者端 APP
-- 📋 按床位选择患者
-- 🕐 选择餐次（早/午/晚餐）
-- 🍽️ 分类浏览菜品，加入购物车
-- 🛒 购物车管理，确认下单
-- 📝 支持备注特殊饮食要求
+- 🔐 手机号注册/登录，密码强度检测
+- 📅 选择送餐日期（当天/次日）和餐次（早/午/晚餐），支持截止时间校验
+- 🍽️ 分类浏览菜品，库存不足置灰提示"已售罄"
+- 🛒 购物车管理，确认下单（自动扣库存）
+- 📋 订单列表，支持按状态筛选（已支付/配送中/已送达/退款中/已退款/已取消）
+- 📝 订单详情展示完整状态变更时间线
+- ❌ 取消订单（选择取消原因）
+- 💰 申请退款（已送达 48 小时内，选择原因 + 上传凭证图片）
+- 🏥 三级联动选择床位（楼栋 → 楼层 → 床位）
+
+### 厨师/配送员工作台
+- 🔐 登录时选择角色（厨师/配送员）
+- 👨‍🍳 **厨师**：查看待制作订单，按下单时间排序，标记"可以配送"后自动分配给配送员
+- 📦 **厨师**：查看已备好的订单（含配送员信息）
+- 🚴 **配送员**：查看待配送订单（含患者地址、电话），标记"已送达"
+- 📊 统计面板显示待处理/已完成数量
+- 🔄 15 秒自动刷新新订单
 
 ### 后台管理系统
 - 📊 数据概览（今日订单统计、营收）
-- 📋 订单管理（查看、确认、配送流程）
-- 📂 菜品分类管理（增删改查、排序、启禁用）
-- 🍽️ 菜品管理（增删改查、上下架）
-- 🛏️ 床位管理（科室、房间、床位、患者信息）
+- 📋 订单管理（查看详情、状态变更记录、厨师/配送员信息）
+- 📂 分类管理（增删改查、排序、启禁用）
+- 🍽️ 菜品管理（增删改查、上下架、**库存管理**）
+- 🛏️ 床位管理（可视化楼栋/楼层/床位，查看床位患者订单）
+- 💰 退款管理（查看/批量确认退款/批量废弃）
+- 👨‍🍳 员工管理（查看厨师和配送员信息、当前配送单量）
+
+## 订单流程
+
+```
+患者下单 → [已支付] → 自动分配厨师
+                ↓
+         厨师标记完成 → [配送中] → 自动分配配送员
+                              ↓
+                       配送员确认 → [已送达]
+                              ↓
+                      48小时内可申请退款 → [退款中] → 管理员审核
+                                                ↓
+                                        确认 → [已退款]
+                                        废弃 → [废弃]
+
+患者也可在 [已支付] 时取消 → [已取消]（需选择原因）
+```
+
+## 楼栋信息
+
+| 楼栋 | 楼层数 | 每层床位 |
+|------|--------|----------|
+| 住院部 1 号楼 | 11 | 87 |
+| 住院部 2 号楼 | 20 | 101 |
+| 住院部 3 号楼 | 9 | 15 |
+| 住院部 4 号楼 | 27 | 55 |
+
+床位编号格式：楼层 + 3位床号，如 4 楼第 1 床 = `4001`
 
 ## API 接口
 
+### 患者
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/patients/register` | POST | 患者注册 |
+| `/api/patients/login` | POST | 患者登录 |
+| `/api/patients/:id` | PUT | 更新患者信息 |
+
+### 菜品
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/categories` | GET/POST | 获取/添加分类 |
+| `/api/categories/active` | GET | 获取启用分类 |
+| `/api/dishes` | GET/POST | 获取/添加菜品 |
+| `/api/dishes/available` | GET | 获取上架菜品（含库存） |
+| `/api/dishes/:id` | PUT/DELETE | 修改/删除菜品 |
+| `/api/dishes/:id/stock` | PUT | 更新菜品库存 |
+
+### 订单
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/orders` | GET/POST | 获取/创建订单（下单自动扣库存、分配厨师） |
+| `/api/orders/:id` | GET | 订单详情（含状态日志、can_refund） |
+| `/api/orders/:id/status` | PUT | 更新订单状态 |
+| `/api/orders/:id/cancel` | POST | 取消订单（含原因） |
+| `/api/orders/:id/refund` | POST | 申请退款（含原因、图片） |
+| `/api/orders/batch-status` | PUT | 批量更新退款状态 |
+| `/api/orders/stats/daily` | GET | 每日统计 |
+
+### 厨师/配送员
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/staff/login` | POST | 员工登录（需选角色） |
+| `/api/staff` | GET | 获取员工列表 |
+| `/api/staff/chef/orders` | GET | 厨师待制作订单 |
+| `/api/staff/chef/ready-orders` | GET | 厨师已备好订单 |
+| `/api/staff/chef/history` | GET | 厨师今日已完成 |
+| `/api/staff/chef/ready` | POST | 厨师标记可配送（自动分配配送员） |
+| `/api/staff/courier/orders` | GET | 配送员待配送订单 |
+| `/api/staff/courier/history` | GET | 配送员今日已送达 |
+| `/api/staff/courier/delivered` | POST | 配送员确认送达 |
+
+### 其他
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | `/api/auth/login` | POST | 管理员登录 |
-| `/api/categories` | GET/POST | 获取/添加分类 |
-| `/api/categories/active` | GET | 获取启用分类 |
-| `/api/categories/:id` | PUT/DELETE | 修改/删除分类 |
-| `/api/dishes` | GET/POST | 获取/添加菜品 |
-| `/api/dishes/available` | GET | 获取上架菜品 |
-| `/api/dishes/:id` | PUT/DELETE | 修改/删除菜品 |
-| `/api/beds` | GET/POST | 获取/添加床位 |
-| `/api/beds/occupied` | GET | 获取有人床位 |
-| `/api/beds/:id` | PUT/DELETE | 修改/删除床位 |
-| `/api/orders` | GET/POST | 获取/创建订单 |
-| `/api/orders/:id` | GET | 订单详情 |
-| `/api/orders/:id/status` | PUT | 更新订单状态 |
-| `/api/orders/stats/daily` | GET | 每日统计 |
-| `/api/upload` | POST | 上传图片 |
+| `/api/beds` | GET/POST | 床位管理 |
+| `/api/upload` | POST | 单图上传 |
+| `/api/upload/multi` | POST | 多图上传（最多5张） |
