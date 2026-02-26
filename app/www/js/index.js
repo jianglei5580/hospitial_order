@@ -187,8 +187,58 @@ function togglePasswordVisibility(inputId, btn) {
   }
 }
 
+// --- SMS Code ---
+let smsCountdown = 0;
+let smsTimer = null;
+
+async function sendSmsCode() {
+  const phone = document.getElementById('reg-phone').value.trim();
+  if (!phone) return showToast('请先输入手机号');
+  if (!/^1\d{10}$/.test(phone)) return showToast('请输入正确的11位手机号');
+  if (smsCountdown > 0) return;
+
+  const btn = document.getElementById('btn-send-code');
+  btn.disabled = true;
+  try {
+    const res = await fetchJSON('/patients/send-code', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
+    if (res.code === 0) {
+      showToast('验证码已发送');
+      startSmsCountdown();
+    } else {
+      showToast(res.msg || '发送失败');
+      btn.disabled = false;
+    }
+  } catch (e) {
+    showToast('网络错误');
+    btn.disabled = false;
+  }
+}
+
+function startSmsCountdown() {
+  smsCountdown = 60;
+  const btn = document.getElementById('btn-send-code');
+  btn.disabled = true;
+  btn.textContent = smsCountdown + 's';
+  btn.classList.add('disabled');
+  smsTimer = setInterval(() => {
+    smsCountdown--;
+    if (smsCountdown <= 0) {
+      clearInterval(smsTimer);
+      btn.disabled = false;
+      btn.textContent = '获取验证码';
+      btn.classList.remove('disabled');
+    } else {
+      btn.textContent = smsCountdown + 's';
+    }
+  }, 1000);
+}
+
 async function doRegister() {
   const phone = document.getElementById('reg-phone').value.trim();
+  const sms_code = document.getElementById('reg-sms-code').value.trim();
   const name = document.getElementById('reg-name').value.trim();
   const password = document.getElementById('reg-password').value;
   const password2 = document.getElementById('reg-password2').value;
@@ -197,6 +247,8 @@ async function doRegister() {
 
   if (!phone) return showToast('请输入手机号');
   if (!/^1\d{10}$/.test(phone)) return showToast('请输入正确的11位手机号');
+  if (!sms_code) return showToast('请输入短信验证码');
+  if (sms_code.length < 4) return showToast('验证码格式不正确');
   if (!name) return showToast('请输入姓名');
   if (!password) return showToast('请输入密码');
 
@@ -208,7 +260,7 @@ async function doRegister() {
   try {
     const res = await fetchJSON('/patients/register', {
       method: 'POST',
-      body: JSON.stringify({ phone, password, name, building: building || '', bed_number: bed_number || '' }),
+      body: JSON.stringify({ phone, password, name, sms_code, building: building || '', bed_number: bed_number || '' }),
     });
     hideLoading();
     if (res.code === 0) {

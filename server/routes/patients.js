@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const { all, get, run } = require('../db-helper');
+const sms = require('../sms');
 
 function hashPassword(pwd) {
   return crypto.createHash('sha256').update(pwd).digest('hex');
@@ -19,13 +20,27 @@ function checkPasswordStrength(pwd) {
   return { ok: true };
 }
 
+router.post('/send-code', async (req, res) => {
+  const { phone } = req.body;
+  if (!phone || !/^1\d{10}$/.test(phone)) return res.json({ code: 1, msg: '请输入正确的11位手机号' });
+  const result = await sms.sendCode(phone);
+  res.json(result);
+});
+
 router.post('/register', (req, res) => {
-  const { phone, password, name, building, bed_number } = req.body;
+  const { phone, password, name, building, bed_number, sms_code } = req.body;
   if (!phone || !name) {
     return res.json({ code: 1, msg: '手机号和姓名为必填项' });
   }
   if (!/^1\d{10}$/.test(phone)) {
     return res.json({ code: 1, msg: '请输入正确的11位手机号' });
+  }
+  if (!sms_code) {
+    return res.json({ code: 1, msg: '请输入短信验证码' });
+  }
+  const smsCheck = sms.verifyCode(phone, sms_code);
+  if (!smsCheck.ok) {
+    return res.json({ code: 1, msg: smsCheck.msg });
   }
   if (!password) {
     return res.json({ code: 1, msg: '请输入密码' });

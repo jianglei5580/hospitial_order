@@ -93,6 +93,37 @@ body {
   color: var(--danger);
 }
 
+/* SMS Code */
+.sms-code-row {
+  display: flex;
+  gap: 8px;
+}
+.sms-code-row input {
+  flex: 1;
+  min-width: 0;
+}
+.btn-send-code {
+  white-space: nowrap;
+  padding: 0 14px;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+  min-width: 100px;
+  text-align: center;
+}
+.btn-send-code:active { background: #f0f7ff; }
+.btn-send-code.disabled, .btn-send-code:disabled {
+  border-color: var(--border);
+  color: var(--text-light);
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
 /* Password field */
 .password-wrapper {
   position: relative;
